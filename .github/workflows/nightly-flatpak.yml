@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build on Linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
 
@@ -73,6 +73,7 @@ jobs:
     name: Deploy Nightly Build
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
        
