@@ -8,7 +8,7 @@ on:
 
 env:
   TOOLCHAIN_VERSION: "20250430"
-  TOOLCHAIN_SHA: "a93eb5db7d87985ddf812623b4403953a85be0ef"
+  TOOLCHAIN_SHA: "909f642cd30bb9fadf29efacc9412c457285cbaa"
   TOOLCHAIN_FILE: "llvm-mingw-20250430-msvcrt-ubuntu-22.04-x86_64.tar.xz"
 
 jobs:
