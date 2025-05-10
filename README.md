@@ -16,7 +16,7 @@ In addition, using GitHub Actions, nightly build of patched executables will be 
 
 *1 Please note that if a build is marked as failed, previous builds may still be available for download!
 ### Testing
-I can currently only test the custom build on linux. Help for testing on other platforms would be helpful.
+I can currently only test the custom build on Windows. Help for testing on other platforms would be helpful.
 ### Special thanks
 A special thanks to [vincejv (Docker container for HandBrake)](https://github.com/vincejv/docker-handbrake) from which I took inspiration for some patches.
 
