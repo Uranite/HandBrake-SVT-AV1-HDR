@@ -9,22 +9,52 @@ on:
 jobs:
   build:
     name: Build on Linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+
+    - name: Rust Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Get latest cargo-c version
+      id: cargoc_version
+      run: |
+        VERSION=$(curl -sL -A "HandBrake-Nightly" "https://crates.io/api/v1/crates/cargo-c" | python3 -c "import sys, json; print(json.load(sys.stdin)['crate']['max_version'])")
+        echo "CARGOC_VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Cargo-C Toolchain Cache
       id: linux-cargo-c-toolchain
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/bin/cargo-capi
           ~/.cargo/bin/cargo-cbuild
           ~/.cargo/bin/cargo-cinstall
-        key: linux-cargo-c-toolchain
+        key: linux-cargo-c-toolchain-${{ env.CARGOC_VERSION }}
+
+    - name: Setup Environment Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ./apt-cache
+          ~/.local/share/flatpak
+        key: setup-env-${{ runner.os }}-${{ github.run_id }}
+        restore-keys: |
+          setup-env-${{ runner.os }}-
 
     - name: Setup Environment
       run: |
+        if [ ! -d "./apt-cache" ]; then mkdir -p ./apt-cache; fi
+        sudo mkdir -p /var/cache/apt/archives
+        sudo cp -rn ./apt-cache/* /var/cache/apt/archives/ || true
+
         sudo apt-get update
         sudo apt-get install -y \
             autoconf automake autopoint appstream build-essential cmake git libass-dev \
@@ -33,10 +63,11 @@ jobs:
             libsamplerate-dev libspeex-dev libtheora-dev libtool libtool-bin libturbojpeg0-dev \
             libvorbis-dev libx264-dev libxml2-dev libvpx-dev m4 make meson nasm ninja-build \
             patch pkg-config tar zlib1g-dev libva-dev libdrm-dev intltool libglib2.0-dev \
-            libunwind-dev libgtk-4-dev libgudev-1.0-dev libssl-dev python3-mesonpy
+            libunwind-dev libgtk-4-dev libgudev-1.0-dev libssl-dev python3-mesonpy ccache
+
         sudo apt-get install flatpak flatpak-builder
-        sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-        sudo flatpak install -y flathub \
+        flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        flatpak install --user -y flathub \
             org.freedesktop.Sdk//25.08 \
             org.freedesktop.Platform//25.08 \
             org.gnome.Platform//49 \
@@ -44,26 +75,48 @@ jobs:
             org.freedesktop.Sdk.Extension.llvm21//25.08 \
             org.freedesktop.Sdk.Extension.rust-stable//25.08
         sudo apt-get upgrade -y
+        sudo cp -rn /var/cache/apt/archives/*.deb ./apt-cache/ || true
+        sudo chown -R $USER:$USER ./apt-cache
 
     - name: Setup Cargo-C Toolchain
       if: steps.linux-cargo-c-toolchain.outputs.cache-hit != 'true'
       run: |
-        cargo install cargo-c
+        cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
         
     - name: Download the Source Code
       run: |
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh
-    
-    - name: Build HandBrake
+
+    - name: Configure HandBrake
       run: |
         cd HandBrake
-        ./configure --launch-jobs=0 --flatpak --enable-qsv --enable-vce --enable-nvenc --enable-nvdec
-        cd build
+        sed -i 's/flatpak-builder/flatpak-builder --ccache/g; s/--disable-cache//g' pkg/linux/module.rules
+        ./configure --launch-jobs=0 --flatpak --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --enable-libdovi
+
+    - name: Flatpak Ccache
+      uses: actions/cache@v5
+      with:
+        path: |
+          HandBrake/build/.flatpak-builder/ccache
+        key: flatpak-ccache-${{ github.run_id }}
+        restore-keys: |
+          flatpak-ccache-
+
+    - name: Build HandBrake
+      run: |
+        cd HandBrake/build
         make pkg.create.flatpak --jobs=$(nproc)
 
+    - name: Check Ccache Stats
+      run: |
+        echo "### Ccache Stats" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ccache -s >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
     - name: Upload Assets
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-Flatpak
         path: ./HandBrake/build/pkg/flatpak/*.flatpak
@@ -75,10 +128,10 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
        
       - name: Download Artifacts - Flatpak Binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrake-Flatpak
           path: flatpak/

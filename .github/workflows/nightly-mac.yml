@@ -9,31 +9,47 @@ on:
 jobs:
   build:
     name: Build on macOS
-    runs-on: macos-latest
-    env:
-      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    runs-on: macos-26
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
-        python-version: '3.13.7'
+        python-version: '3.14.0'
+        cache: 'pip'
+        cache-dependency-path: '.github/workflows/nightly-mac.yml'
+
+    - name: Rust Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
 
     - name: Toolchain Cache
       id: mac-toolchain
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/mac-toolchain
         key: ${{ runner.os }}-${{ runner.arch }}-toolchain
 
+    - name: Get latest cargo-c version
+      id: cargoc_version
+      run: |
+        VERSION=$(curl -sL -A "HandBrake-Nightly" "https://crates.io/api/v1/crates/cargo-c" | python3 -c "import sys, json; print(json.load(sys.stdin)['crate']['max_version'])")
+        echo "CARGOC_VERSION=$VERSION" >> $GITHUB_ENV
+
     - name: Cargo-C Toolchain Cache
       id: mac-cargo-c-toolchain
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/bin/cargo-capi
           ~/.cargo/bin/cargo-cbuild
           ~/.cargo/bin/cargo-cinstall
-        key: ${{ runner.os }}-${{ runner.arch }}-cargo-c-toolchain-1
+        key: ${{ runner.os }}-${{ runner.arch }}-cargo-c-${{ env.CARGOC_VERSION }}
 
     - name: Download the Source Code
       run: |
@@ -44,6 +60,18 @@ jobs:
       run: |
         echo ~/mac-toolchain/bin >> $GITHUB_PATH
         rustup target add x86_64-apple-darwin
+        xcodebuild -downloadComponent MetalToolchain
+        brew install ccache
+        export PATH=$(brew --prefix ccache)/libexec:$PATH
+        echo "PATH=$(brew --prefix ccache)/libexec:$PATH" >> $GITHUB_ENV
+
+    - name: Compiler Cache
+      uses: actions/cache@v5
+      with:
+        path: /Users/runner/Library/Caches/ccache
+        key: ${{ runner.os }}-ccache-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
 
     - name: Setup Toolchain
       if: steps.mac-toolchain.outputs.cache-hit != 'true'
@@ -54,17 +82,24 @@ jobs:
     - name: Setup Cargo-C Toolchain
       if: steps.mac-cargo-c-toolchain.outputs.cache-hit != 'true'
       run: |
-        cargo install cargo-c
+        cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
 
     - name: Build HandBrake
       run: |
         cd HandBrake
-        ./configure
+        ./configure --enable-libdovi
         cd build
         make ub && make pkg.create
 
+    - name: Check Ccache Stats
+      run: |
+        echo "### Ccache Stats" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ccache -s >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
     - name: Upload Assets
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-macos
         path: ./HandBrake/build/pkg/*.dmg
@@ -76,7 +111,7 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
        
       - name: Download Artifacts - Universal Binaries
         uses: actions/download-artifact@v5

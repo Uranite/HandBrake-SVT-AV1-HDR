@@ -8,8 +8,8 @@ pkgname=(
   'handbrake-svt-av1-psy-llvm-optimized-cli'
 )
 
-pkgver=1.9.0
-pkgrel=2
+pkgver=1.10.2
+pkgrel=1
 arch=('x86_64')
 url="https://handbrake.fr/"
 license=(GPL-2.0-only)
@@ -61,6 +61,9 @@ makedepends=(
   'clang'
   'lld'
   'llvm'
+  'rust'
+  'cargo-c'
+  'ffnvcodec-headers'
   # AMD VCE encoding on Linux requires Vulkan
   'vulkan-headers'
   "${_commondeps[@]}"
@@ -107,6 +110,8 @@ build() {
     --lto=on
     --enable-qsv
     --enable-vce
+    --enable-nvenc
+    --enable-libdovi
   )
 
   cd "${srcdir}/HandBrake" || exit
@@ -126,6 +131,7 @@ package_handbrake-svt-av1-psy-llvm-optimized() {
     'gst-plugins-good: for video previews'
     'gst-libav: for video previews'
     'intel-media-sdk: Intel QuickSync support'
+    'nvidia-utils: NVIDIA NVENC support'
     'libdvdcss: for decoding encrypted DVDs'
   )
   provides=(handbrake)
@@ -143,6 +149,7 @@ package_handbrake-svt-av1-psy-llvm-optimized-cli() {
   depends=("${_commondeps[@]}")
   optdepends=(
     'intel-media-sdk: Intel QuickSync support'
+    'nvidia-utils: NVIDIA NVENC support'
     'libdvdcss: for decoding encrypted DVDs'
   )
   provides=(handbrake-cli)

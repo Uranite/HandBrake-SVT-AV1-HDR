@@ -7,23 +7,66 @@ on:
   workflow_dispatch:
 
 env:
-  TOOLCHAIN_VERSION: "20250826"
-  TOOLCHAIN_SHA: "e89251ff7ee45fc45d50ed5c68ff45ebf77f0c83c8329db687d6c78652686738"
-  TOOLCHAIN_FILE: "llvm-mingw-20250826-msvcrt-ubuntu-22.04-x86_64.tar.xz"
+  TOOLCHAIN_VERSION: "20251202"
+  TOOLCHAIN_SHA: "917623b4542d126ad5ea8622cd0546f756e45694f201d8c57161cbc0a0241d6e"
+  TOOLCHAIN_FILE: "llvm-mingw-20251202-msvcrt-ubuntu-22.04-x86_64.tar.xz"
 
 jobs:
   build_mingw_arm:
     name: CLI / LibHB (ARM)
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+
+    - name: Rust Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Toolchain Cache
+      id: toolchain-cache
+      uses: actions/cache@v5
+      with:
+        path: toolchains
+        key: ${{ runner.os }}-toolchain-${{ env.TOOLCHAIN_VERSION }}
+
+    - name: Compiler Cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-arm-ccache-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-arm-ccache-
+
+    - name: Get latest cargo-c version
+      id: cargoc_version
+      run: |
+        VERSION=$(curl -sL -A "HandBrake-Nightly" "https://crates.io/api/v1/crates/cargo-c" | python3 -c "import sys, json; print(json.load(sys.stdin)['crate']['max_version'])")
+        echo "CARGOC_VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Cargo-C Toolchain Cache
+      id: windows-cargo-c-toolchain
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/bin/cargo-capi
+          ~/.cargo/bin/cargo-cbuild
+          ~/.cargo/bin/cargo-cinstall
+        key: ${{ runner.os }}-${{ runner.arch }}-windows-cargo-c-toolchain-${{ env.CARGOC_VERSION }}
 
     - name: Setup Environment
       run: |
         sudo apt-get update
-        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake python3-mesonpy
-        
+        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache
+        rustup target add aarch64-pc-windows-gnullvm
+
     - name: Setup Toolchain
+      if: steps.toolchain-cache.outputs.cache-hit != 'true'
       run: |
         wget https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.TOOLCHAIN_VERSION }}/${{ env.TOOLCHAIN_FILE }}
         SHA=$(sha256sum ${{ env.TOOLCHAIN_FILE }})
@@ -41,11 +84,24 @@ jobs:
             exit 1
         fi
 
+    - name: Setup Cargo-C Toolchain
+      if: steps.windows-cargo-c-toolchain.outputs.cache-hit != 'true'
+      run: |
+        cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
+
     - name: Build CLI and LibHB
       run: |
         CWDIR=$(pwd)
         export PATH="$CWDIR/toolchains/llvm-mingw-${{ env.TOOLCHAIN_VERSION }}-msvcrt-ubuntu-22.04-x86_64/bin:${PATH}"
-        export PATH=/usr/bin:$PATH
+
+        mkdir -p ccache_bin
+        ln -s $(which ccache) ccache_bin/aarch64-w64-mingw32-clang
+        ln -s $(which ccache) ccache_bin/aarch64-w64-mingw32-clang++
+        export PATH="$CWDIR/ccache_bin:$PATH"
+        export CC="clang"
+        export CXX="clang++"
+        export CCACHE_DIR=$HOME/.ccache
+
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh
         cd HandBrake
@@ -53,14 +109,21 @@ jobs:
         cd build
         make pkg.create.zip
         
+    - name: Check Ccache Stats
+      run: |
+        echo "### Ccache Stats" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ccache -s >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrakeCLI_ARM64
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: LibHandBrake_ARM64
         path: ./HandBrake/build/libhb/hb.dll
@@ -70,7 +133,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_arm
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Clone and Setup
       run: |
@@ -87,7 +150,7 @@ jobs:
          nuget restore HandBrake.sln
 
     - name: Download LibHandBrake ARM 64
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
        name: LibHandBrake_ARM64
        path: HandBrake/win/CS/HandBrakeWPF/bin/publish
@@ -125,13 +188,13 @@ jobs:
       shell: cmd
 
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-arm64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*Win_GUI.exe
     
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-arm64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
@@ -140,25 +203,57 @@ jobs:
     name: CLI / LibHB
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+
+    - name: Rust Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Toolchain Cache
+      id: toolchain-cache
+      uses: actions/cache@v5
+      with:
+        path: toolchains
+        key: ${{ runner.os }}-toolchain-${{ env.TOOLCHAIN_VERSION }}
+
+    - name: Compiler Cache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-x64-ccache-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-x64-ccache-
+
+    - name: Get latest cargo-c version
+      id: cargoc_version
+      run: |
+        VERSION=$(curl -sL -A "HandBrake-Nightly" "https://crates.io/api/v1/crates/cargo-c" | python3 -c "import sys, json; print(json.load(sys.stdin)['crate']['max_version'])")
+        echo "CARGOC_VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Cargo-C Toolchain Cache
       id: windows-cargo-c-toolchain
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/bin/cargo-capi
           ~/.cargo/bin/cargo-cbuild
           ~/.cargo/bin/cargo-cinstall
-        key: windows-cargo-c-toolchain-1
+        key: ${{ runner.os }}-${{ runner.arch }}-windows-cargo-c-toolchain-${{ env.CARGOC_VERSION }}
 
     - name: Setup Environment
       run: |
         sudo apt-get update
-        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake python3-mesonpy
+        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache
         rustup target add x86_64-pc-windows-gnu
 
     - name: Setup Toolchain
+      if: steps.toolchain-cache.outputs.cache-hit != 'true'
       run: |
         wget https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.TOOLCHAIN_VERSION }}/${{ env.TOOLCHAIN_FILE }}
         SHA=$(sha256sum ${{ env.TOOLCHAIN_FILE }})
@@ -179,28 +274,43 @@ jobs:
     - name: Setup Cargo-C Toolchain
       if: steps.windows-cargo-c-toolchain.outputs.cache-hit != 'true'
       run: |
-        cargo install cargo-c
+        cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
 
     - name: Build CLI and LibHB
       run: |
         CWDIR=$(pwd)
         export PATH="$CWDIR/toolchains/llvm-mingw-${{ env.TOOLCHAIN_VERSION }}-msvcrt-ubuntu-22.04-x86_64/bin:${PATH}"
-        export PATH=/usr/bin:$PATH
+
+        mkdir -p ccache_bin
+        ln -s $(which ccache) ccache_bin/x86_64-w64-mingw32-clang
+        ln -s $(which ccache) ccache_bin/x86_64-w64-mingw32-clang++
+        export PATH="$CWDIR/ccache_bin:$PATH"
+        export CC="clang"
+        export CXX="clang++"
+        export CCACHE_DIR=$HOME/.ccache
+
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh
         cd HandBrake
-        ./configure --cross=x86_64-w64-mingw32 --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --launch-jobs=0 --launch
+        ./configure --cross=x86_64-w64-mingw32 --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --enable-libdovi --launch-jobs=0 --launch
         cd build
         make pkg.create.zip
 
+    - name: Check Ccache Stats
+      run: |
+        echo "### Ccache Stats" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ccache -s >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrakeCLI
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: LibHandBrake
         path: ./HandBrake/build/libhb/hb.dll
@@ -210,7 +320,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_x64
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Clone and Setup
       run: |
@@ -227,7 +337,7 @@ jobs:
          nuget restore HandBrake.sln
 
     - name: Download LibHandBrake
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
        name: LibHandBrake
        path: HandBrake/win/CS/HandBrakeWPF/bin/publish
@@ -263,13 +373,13 @@ jobs:
       shell: cmd
       
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-x86_64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*-Win_GUI.exe
        
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: HandBrake-x86_64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
@@ -278,44 +388,44 @@ jobs:
     name: Deploy Nightly Build
     runs-on: ubuntu-latest
     needs: [build_gui_x64, build_gui_arm64]
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
        
       # X64 Devices
       - name: Download Artifacts - CLI x64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrakeCLI
           path: win/
                    
       - name: Download Artifacts - GUI x64 EXE
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrake-x86_64-WinExe
           path: win/
        
       - name: Download Artifacts - GUI x64 Portable
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrake-x86_64-WinPortable
           path: win/
       
       # ARM DEVICES
       - name: Download Artifacts - CLI ARM64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrakeCLI_ARM64
           path: win/
           
       - name: Download Artifacts - GUI ARM64 EXE
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrake-arm64-WinExe
           path: win/
 
       - name: Download Artifacts - GUI ARM64 Portable
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: HandBrake-arm64-WinPortable
           path: win/
