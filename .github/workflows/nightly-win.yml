@@ -120,13 +120,13 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeCLI_ARM64
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: LibHandBrake_ARM64
         path: ./HandBrake/build/libhb/hb.dll
@@ -191,13 +191,13 @@ jobs:
       shell: cmd
 
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-arm64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*Win_GUI.exe
     
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-arm64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
@@ -307,13 +307,13 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeCLI
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: LibHandBrake
         path: ./HandBrake/build/libhb/hb.dll
@@ -376,13 +376,13 @@ jobs:
       shell: cmd
       
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-x86_64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*-Win_GUI.exe
        
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-x86_64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
