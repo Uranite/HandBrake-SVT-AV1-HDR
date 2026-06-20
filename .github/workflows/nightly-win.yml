@@ -19,7 +19,7 @@ jobs:
     name: CLI / LibHB (ARM)
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -136,7 +136,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_arm
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Clone and Setup
       run: |
@@ -206,7 +206,7 @@ jobs:
     name: CLI / LibHB
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -323,7 +323,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_x64
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Clone and Setup
       run: |
@@ -393,7 +393,7 @@ jobs:
     needs: [build_gui_x64, build_gui_arm64]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
        
       # X64 Devices
       - name: Download Artifacts - CLI x64

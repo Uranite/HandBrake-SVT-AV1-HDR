@@ -14,7 +14,7 @@ jobs:
     name: Build on Arch
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -64,7 +64,7 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request'
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
        
     - name: Download Artifacts - PKG Arch Linux
       uses: actions/download-artifact@v7
