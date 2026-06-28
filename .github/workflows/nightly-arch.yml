@@ -9,6 +9,10 @@ on:
     - cron:  '30 7 * * 1,5'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build on Arch
@@ -63,6 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v6
        
