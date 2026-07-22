@@ -1,14 +1,14 @@
 diff --git a/contrib/svt-av1/module.defs b/contrib/svt-av1/module.defs
-index 992313921..d01b1176c 100644
+index 7c9116ecf..7796b2719 100644
 --- a/contrib/svt-av1/module.defs
 +++ b/contrib/svt-av1/module.defs
 @@ -1,9 +1,8 @@
  $(eval $(call import.MODULE.defs,SVT-AV1,svt-av1))
  $(eval $(call import.CONTRIB.defs,SVT-AV1))
  
--SVT-AV1.FETCH.url     = https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/SVT-AV1-v4.1.0.tar.gz
--SVT-AV1.FETCH.url    += https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v4.1.0/SVT-AV1-v4.1.0.tar.gz
--SVT-AV1.FETCH.sha256  = 6c4c0c44ff0ba3d136d6f57f3a707f9de8e9c866f50f809c1d22a43f0d8c9583
+-SVT-AV1.FETCH.url     = https://github.com/HandBrake/HandBrake-contribs/releases/download/contribs2/SVT-AV1-v4.2.0.tar.gz
+-SVT-AV1.FETCH.url    += https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v4.2.0/SVT-AV1-v4.2.0.tar.gz
+-SVT-AV1.FETCH.sha256  = c7b13c4a84bd3751aa35fcc72be13e6875467e7c2216879251a486e5b1e4e740
 +SVT-AV1.FETCH.url     = https://github.com/Uranite/HandBrake-SVT-AV1-HDR/releases/download/contribs/svt-av1-hdr.tar.gz
 +SVT-AV1.FETCH.sha256  = 5a8ecbe5fbc107f17a948d09a0fc17404de4f1eb5f620545c702ac8cc218dd53
  
