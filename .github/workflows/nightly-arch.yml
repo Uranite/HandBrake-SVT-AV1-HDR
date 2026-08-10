@@ -73,7 +73,7 @@ jobs:
     - uses: actions/checkout@v6
        
     - name: Download Artifacts - PKG Arch Linux
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: HandBrakePKG
         path: arch/
