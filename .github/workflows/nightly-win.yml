@@ -207,109 +207,74 @@ jobs:
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
         
   build_mingw_x64:
-    name: CLI / LibHB
-    runs-on: ubuntu-24.04
+    name: CLI / LibHB (native MSYS2/Clang)
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v6
 
-    - name: Rust Cache
-      uses: actions/cache@v5
+    - name: Setup MSYS2 CLANG64
+      uses: msys2/setup-msys2@v2
       with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ github.run_id }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-
-    - name: Toolchain Cache
-      id: toolchain-cache
-      uses: actions/cache@v5
-      with:
-        path: toolchains
-        key: ${{ runner.os }}-toolchain-${{ env.TOOLCHAIN_VERSION }}
-
-    - name: Compiler Cache
-      uses: actions/cache@v5
-      with:
-        path: ~/.ccache
-        key: ${{ runner.os }}-x64-ccache-${{ github.run_id }}
-        restore-keys: |
-          ${{ runner.os }}-x64-ccache-
-
-    - name: Get latest cargo-c version
-      id: cargoc_version
-      run: |
-        VERSION=$(curl -sL -A "HandBrake-Nightly" "https://crates.io/api/v1/crates/cargo-c" | python3 -c "import sys, json; print(json.load(sys.stdin)['crate']['max_version'])")
-        echo "CARGOC_VERSION=$VERSION" >> $GITHUB_ENV
-
-    - name: Cargo-C Toolchain Cache
-      id: windows-cargo-c-toolchain
-      uses: actions/cache@v5
-      with:
-        path: |
-          ~/.cargo/bin/cargo-capi
-          ~/.cargo/bin/cargo-cbuild
-          ~/.cargo/bin/cargo-cinstall
-        key: ${{ runner.os }}-${{ runner.arch }}-windows-cargo-c-toolchain-${{ env.CARGOC_VERSION }}
-
-    - name: Setup Environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache wine64
-        rustup target add x86_64-pc-windows-gnu
-
-    - name: Setup Toolchain
-      if: steps.toolchain-cache.outputs.cache-hit != 'true'
-      run: |
-        wget https://github.com/mstorsjo/llvm-mingw/releases/download/${{ env.TOOLCHAIN_VERSION }}/${{ env.TOOLCHAIN_FILE }}
-        SHA=$(sha256sum ${{ env.TOOLCHAIN_FILE }})
-        EXPECTED="${{ env.TOOLCHAIN_SHA }}  ${{ env.TOOLCHAIN_FILE }}"
-        echo "Calculated SHA: $SHA"
-        echo "Expected SHA:  $EXPECTED"
-        if [ "$SHA" == "$EXPECTED" ]; then
-            echo "Toolchain Verified. Extracting ..."
-            mkdir toolchains
-            mv ${{ env.TOOLCHAIN_FILE }} toolchains
-            cd toolchains
-            tar xvf ${{ env.TOOLCHAIN_FILE }}
-        else
-            echo "Toolchain Verification FAILED. Exiting!"
-            exit 1
-        fi
-
-    - name: Setup Cargo-C Toolchain
-      if: steps.windows-cargo-c-toolchain.outputs.cache-hit != 'true'
-      run: |
-        cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
+        msystem: CLANG64
+        update: true
+        install: >-
+          base-devel
+          autoconf
+          automake
+          curl
+          git
+          gzip
+          libtool
+          m4
+          patch
+          pax
+          tar
+          zip
+        pacboy: >-
+          binutils:p
+          cargo-c:p
+          clang:p
+          cmake:p
+          lld:p
+          llvm:p
+          meson:p
+          nasm:p
+          ninja:p
+          pkgconf:p
+          python:p
+          rust:p
 
     - name: Build CLI and LibHB
+      shell: msys2 {0}
       run: |
-        CWDIR=$(pwd)
-        export PATH="$CWDIR/toolchains/llvm-mingw-${{ env.TOOLCHAIN_VERSION }}-msvcrt-ubuntu-22.04-x86_64/bin:${PATH}"
-
-        mkdir -p ccache_bin
-        ln -s $(which ccache) ccache_bin/x86_64-w64-mingw32-clang
-        ln -s $(which ccache) ccache_bin/x86_64-w64-mingw32-clang++
-        export PATH="$CWDIR/ccache_bin:$PATH"
+        mkdir -p "$HOME/bin"
+        ln -sf "$(command -v clang)" "$HOME/bin/x86_64-w64-mingw32-clang"
+        ln -sf "$(command -v clang++)" "$HOME/bin/x86_64-w64-mingw32-clang++"
+        ln -sf "$(command -v clang)" "$HOME/bin/x86_64-w64-mingw32-gcc"
+        ln -sf "$(command -v clang++)" "$HOME/bin/x86_64-w64-mingw32-g++"
+        ln -sf "$(command -v llvm-ar)" "$HOME/bin/x86_64-w64-mingw32-ar"
+        ln -sf "$(command -v llvm-ranlib)" "$HOME/bin/x86_64-w64-mingw32-ranlib"
+        ln -sf "$(command -v llvm-strip)" "$HOME/bin/x86_64-w64-mingw32-strip"
+        if command -v llvm-windres >/dev/null 2>&1; then
+          ln -sf "$(command -v llvm-windres)" "$HOME/bin/x86_64-w64-mingw32-windres"
+        elif command -v windres >/dev/null 2>&1; then
+          ln -sf "$(command -v windres)" "$HOME/bin/x86_64-w64-mingw32-windres"
+        fi
+        export PATH="$HOME/bin:$PATH"
         export CC="clang"
         export CXX="clang++"
-        export CCACHE_DIR=$HOME/.ccache
+        export AR="llvm-ar"
+        export RANLIB="llvm-ranlib"
+        export STRIP="llvm-strip"
+        export LD="lld"
 
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh
         cd HandBrake
         ./configure --cross=x86_64-w64-mingw32 --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --enable-libdovi --launch-jobs=0 --launch
         cd build
-        make SVT-AV1.PGO=1 pkg.create.zip
+        make SVT-AV1.PGO=1 SVT-AV1.PGO.NATIVE=1 pkg.create.zip
 
-    - name: Check Ccache Stats
-      run: |
-        echo "### Ccache Stats" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        ccache -s >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        
     - name: Upload HandBrakeCLI
       uses: actions/upload-artifact@v6
       with:

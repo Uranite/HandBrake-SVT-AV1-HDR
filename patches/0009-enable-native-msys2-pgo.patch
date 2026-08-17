@@ -1,0 +1,29 @@
+diff --git a/contrib/svt-av1/module.defs b/contrib/svt-av1/module.defs
+--- a/contrib/svt-av1/module.defs
++++ b/contrib/svt-av1/module.defs
+@@ -19,16 +19,22 @@
+ # builds enable it automatically; cross builds need an explicit opt-in and a
+ # runner capable of executing the target encoder.
+ SVT-AV1.PGO ?= 0
++SVT-AV1.PGO.NATIVE ?= 0
+ ifeq (0-speed,$(HOST.cross)-$(GCC.O))
+     SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=ON -DSVT_AV1_PGO=ON
+     SVT-AV1.BUILD.ntargets = RunPGO
+ else ifeq (1-mingw,$(HOST.cross)-$(HOST.system))
+-    # Windows x64 PGO runs the cross-compiled encoder through Wine.
++    # Windows PGO runs the cross-compiled encoder either natively under
++    # MSYS2/MinGW or through Wine when built on Linux.
+     ifeq (1,$(SVT-AV1.PGO))
+         SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=ON -DSVT_AV1_PGO=ON
+         SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_DIR=$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
+-        SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_RUNTIME_DIR=Z:$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
+-        SVT-AV1.BUILD.env      += SVT_AV1_PGO_RUNNER=wine64
++        ifeq (1,$(SVT-AV1.PGO.NATIVE))
++            SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_RUNTIME_DIR=$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
++        else
++            SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_RUNTIME_DIR=Z:$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
++            SVT-AV1.BUILD.env      += SVT_AV1_PGO_RUNNER=wine64
++        endif
+         SVT-AV1.BUILD.ntargets = RunPGO
+     else
+         SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=OFF
