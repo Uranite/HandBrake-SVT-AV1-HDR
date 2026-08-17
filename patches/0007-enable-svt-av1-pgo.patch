@@ -1,0 +1,36 @@
+diff --git a/contrib/svt-av1/module.defs b/contrib/svt-av1/module.defs
+--- a/contrib/svt-av1/module.defs
++++ b/contrib/svt-av1/module.defs
+@@ -13,9 +13,31 @@ SVT-AV1.CONFIGURE.args.prefix = -DCMAKE_INSTALL_PREFIX="$(SVT-AV1.CONFIGURE.prefix)"
+ SVT-AV1.CONFIGURE.deps        =
+ SVT-AV1.CONFIGURE.static      =
+ SVT-AV1.CONFIGURE.shared      = -DBUILD_SHARED_LIBS=OFF
+-SVT-AV1.CONFIGURE.extra       = -DBUILD_APPS=OFF -DREPRODUCIBLE_BUILDS=ON
++SVT-AV1.CONFIGURE.extra       = -DREPRODUCIBLE_BUILDS=ON
+ SVT-AV1.CONFIGURE.extra      += -DCMAKE_INSTALL_LIBDIR=lib
+ 
++# The upstream PGO target runs the instrumented encoder. Native optimized
++# builds enable it automatically; cross builds need an explicit opt-in and a
++# runner capable of executing the target encoder.
++SVT-AV1.PGO ?= 0
++ifeq (0-speed,$(HOST.cross)-$(GCC.O))
++    SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=ON -DSVT_AV1_PGO=ON
++    SVT-AV1.BUILD.ntargets = RunPGO
++else ifeq (1-mingw,$(HOST.cross)-$(HOST.system))
++    # Windows x64 PGO runs the cross-compiled encoder through Wine.
++    ifeq (1,$(SVT-AV1.PGO))
++        SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=ON -DSVT_AV1_PGO=ON
++        SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_DIR=$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
++        SVT-AV1.CONFIGURE.extra += -DSVT_AV1_PGO_RUNTIME_DIR=Z:$(call fn.ABSOLUTE,$(SVT-AV1.BUILD.dir))
++        SVT-AV1.BUILD.env      += SVT_AV1_PGO_RUNNER=wine64
++        SVT-AV1.BUILD.ntargets = RunPGO
++    else
++        SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=OFF
++    endif
++else
++    SVT-AV1.CONFIGURE.extra += -DBUILD_APPS=OFF
++endif
++
+ ifeq ($(GCC.O),$(filter $(GCC.O),size size-aggressive))
+     SVT-AV1.CONFIGURE.extra += -DCMAKE_BUILD_TYPE=MinSizeRel -DMINIMAL_BUILD=ON
+ else

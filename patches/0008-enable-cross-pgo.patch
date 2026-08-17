@@ -1,0 +1,51 @@
+diff --git a/contrib/svt-av1/A02-pgo-runner.patch b/contrib/svt-av1/A02-pgo-runner.patch
+new file mode 100644
+--- /dev/null
++++ b/contrib/svt-av1/A02-pgo-runner.patch
+@@ -0,0 +1,46 @@
++--- a/CMakeLists.txt
+++++ b/CMakeLists.txt
++@@ -247,3 +247,4 @@ if(NOT MSVC)
++     mark_as_advanced(SVT_INTERNAL_PGO_GENERATE SVT_INTERNAL_PGO_USE)
++     set(SVT_AV1_PGO_DIR "${CMAKE_BINARY_DIR}" CACHE PATH "Path to the directory passed to -fprofile-dir for use with profile guided optimization")
+++    set(SVT_AV1_PGO_RUNTIME_DIR "${SVT_AV1_PGO_DIR}" CACHE PATH "Path to the directory as seen by the profiled executable")
++     set(SVT_AV1_PGO_CUSTOM_VIDEOS "" CACHE STRING "Semi-colon separated list of directories with y4m videos to run PGO on instead of objective-1-fast")
++@@ -291,6 +292,6 @@ elseif(SVT_INTERNAL_PGO_GENERATE)
++         set(PGO_LINKER_FLAGS "/LTCG /GENPROFILE")
++     else()
++-        set(PGO_COMPILER_FLAGS "-fprofile-generate=${SVT_AV1_PGO_DIR}")
++-        set(PGO_LINKER_FLAGS "-fprofile-generate=${SVT_AV1_PGO_DIR}")
+++        set(PGO_COMPILER_FLAGS "-fprofile-generate=${SVT_AV1_PGO_RUNTIME_DIR}")
+++        set(PGO_LINKER_FLAGS "-fprofile-generate=${SVT_AV1_PGO_RUNTIME_DIR}")
++     endif()
++ endif()
++diff --git a/Build/pgohelper.cmake b/Build/pgohelper.cmake
++--- a/Build/pgohelper.cmake
+++++ b/Build/pgohelper.cmake
++@@ -40,11 +40,24 @@
++ foreach(video IN LISTS videofiles)
++     get_filename_component(videoname "${video}" NAME_WE)
++ 
++-    SET(ENCODING_COMMAND ${SvtAv1EncApp} -i ${video} -b "${BUILD_DIRECTORY}/${videoname}.ivf" --preset 2 --film-grain 8 --tune 0)
+++    if(DEFINED ENV{SVT_AV1_PGO_RUNNER} AND NOT "$ENV{SVT_AV1_PGO_RUNNER}" STREQUAL "")
+++        set(PGO_RUNNER "$ENV{SVT_AV1_PGO_RUNNER}")
+++        file(RELATIVE_PATH relative_video "${BUILD_DIRECTORY}" "${video}")
+++        SET(ENCODING_COMMAND ${PGO_RUNNER} ${SvtAv1EncApp} -i ${relative_video} -b "${videoname}.ivf" --preset 2 --film-grain 8 --tune 0)
+++        set(PGO_WORKING_DIRECTORY "${BUILD_DIRECTORY}")
+++    else()
+++        SET(ENCODING_COMMAND ${SvtAv1EncApp} -i ${video} -b "${BUILD_DIRECTORY}/${videoname}.ivf" --preset 2 --film-grain 8 --tune 0)
+++        set(PGO_WORKING_DIRECTORY "")
+++    endif()
+++
++     list(JOIN ENCODING_COMMAND " " ENCODING_COMMAND_STR)
++     message(
++         STATUS
++             "Running ${ENCODING_COMMAND_STR}"
++     )
++-    execute_process(COMMAND ${ENCODING_COMMAND})
+++    if(PGO_WORKING_DIRECTORY)
+++        execute_process(COMMAND ${ENCODING_COMMAND} WORKING_DIRECTORY "${PGO_WORKING_DIRECTORY}")
+++    else()
+++        execute_process(COMMAND ${ENCODING_COMMAND})
+++    endif()
++ endforeach()

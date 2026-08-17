@@ -256,7 +256,7 @@ jobs:
     - name: Setup Environment
       run: |
         sudo apt-get update
-        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache
+        sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache wine64
         rustup target add x86_64-pc-windows-gnu
 
     - name: Setup Toolchain
@@ -301,7 +301,7 @@ jobs:
         cd HandBrake
         ./configure --cross=x86_64-w64-mingw32 --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --enable-libdovi --launch-jobs=0 --launch
         cd build
-        make pkg.create.zip
+        make SVT-AV1.PGO=1 pkg.create.zip
 
     - name: Check Ccache Stats
       run: |
