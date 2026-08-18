@@ -1,7 +1,16 @@
 diff --git a/make/configure.py b/make/configure.py
 --- a/make/configure.py
 +++ b/make/configure.py
-@@ -499,7 +499,7 @@ class BuildTupleProbe( ShellProbe, list ):
+@@ -154,6 +154,8 @@
+     ## On success, returns full pathname of executable.
+     ## On fail, returns None.
+     def findExecutable( self, name ):
++        if os.name == 'nt' and not os.path.splitext( name )[1]:
++            name = name + os.extsep + 'exe'
+         if len( os.path.split(name)[0] ):
+             if os.access( name, os.X_OK ):
+                 return name
+@@ -499,7 +501,7 @@
      GNU_TUPLE_RE = '([^-]+)-?([^-]*)-([^0-9-]+)([^-]*)-?([^-]*)'
  
      def __init__( self ):
@@ -10,13 +19,12 @@ diff --git a/make/configure.py b/make/configure.py
  
      def _parseSession( self ):
          self.spec = self.session[0].decode('utf-8') if self.session else ''
-@@ -823,9 +823,9 @@ class RepoProbe( ShellProbe ):
+@@ -823,7 +825,7 @@
          if not os.path.isfile( repo_info ):
              raise AbortError( 'Missing required script %s', repo_info )
  
 -        super( RepoProbe, self ).__init__( 'repo info', '%s %s' %
--                                            (repo_info, cfg.src_dir) )
 +        super( RepoProbe, self ).__init__( 'repo info', 'sh %s %s' %
-+                                            (repo_info, cfg.src_dir) )
+                                             (repo_info, cfg.src_dir) )
  
          self.url       = 'git://nowhere.com/project/unknown'
