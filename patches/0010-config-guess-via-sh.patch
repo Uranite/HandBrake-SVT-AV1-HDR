@@ -1,0 +1,22 @@
+diff --git a/make/configure.py b/make/configure.py
+--- a/make/configure.py
++++ b/make/configure.py
+@@ -499,7 +499,7 @@ class BuildTupleProbe( ShellProbe, list ):
+     GNU_TUPLE_RE = '([^-]+)-?([^-]*)-([^0-9-]+)([^-]*)-?([^-]*)'
+ 
+     def __init__( self ):
+-        super( BuildTupleProbe, self ).__init__( 'build tuple', '%s/config.guess' % (cfg.dir), abort=True, head=True )
++        super( BuildTupleProbe, self ).__init__( 'build tuple', 'sh %s/config.guess' % (cfg.dir), abort=True, head=True )
+ 
+     def _parseSession( self ):
+         self.spec = self.session[0].decode('utf-8') if self.session else ''
+@@ -823,9 +823,9 @@ class RepoProbe( ShellProbe ):
+         if not os.path.isfile( repo_info ):
+             raise AbortError( 'Missing required script %s', repo_info )
+ 
+-        super( RepoProbe, self ).__init__( 'repo info', '%s %s' %
+-                                            (repo_info, cfg.src_dir) )
++        super( RepoProbe, self ).__init__( 'repo info', 'sh %s %s' %
++                                            (repo_info, cfg.src_dir) )
+ 
+         self.url       = 'git://nowhere.com/project/unknown'
