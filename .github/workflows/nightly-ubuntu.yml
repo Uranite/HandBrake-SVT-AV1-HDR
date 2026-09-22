@@ -18,7 +18,7 @@ jobs:
     name: Build on Ubuntu
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -120,13 +120,13 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
 
     - name: Upload HandBrake CLI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeCLI
         path: ./HandBrakeCLI*
 
     - name: Upload HandBrake GUI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeGUI
         path: ./ghb-*
@@ -140,16 +140,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
        
       - name: Download Artifacts - CLI Ubuntu
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrakeCLI
           path: ubuntu/
 
       - name: Download Artifacts - GUI Ubuntu
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrakeGUI
           path: ubuntu/

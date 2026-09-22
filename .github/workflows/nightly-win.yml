@@ -23,7 +23,7 @@ jobs:
     name: CLI / LibHB (ARM)
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -124,13 +124,13 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeCLI_ARM64
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: LibHandBrake_ARM64
         path: ./HandBrake/build/libhb/hb.dll
@@ -140,7 +140,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_arm
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Clone and Setup
       run: |
@@ -157,7 +157,7 @@ jobs:
          nuget restore HandBrake.sln
 
     - name: Download LibHandBrake ARM 64
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
        name: LibHandBrake_ARM64
        path: HandBrake/win/CS/HandBrakeWPF/bin/publish
@@ -195,13 +195,13 @@ jobs:
       shell: cmd
 
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-arm64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*Win_GUI.exe
     
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-arm64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
@@ -210,7 +210,7 @@ jobs:
     name: CLI / LibHB
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Rust Cache
       uses: actions/cache@v5
@@ -311,13 +311,13 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         
     - name: Upload HandBrakeCLI
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrakeCLI
         path: ./HandBrake/build/pkg/*.zip
 
     - name: Upload LibHB
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: LibHandBrake
         path: ./HandBrake/build/libhb/hb.dll
@@ -327,7 +327,7 @@ jobs:
     runs-on: windows-2022
     needs: build_mingw_x64
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Clone and Setup
       run: |
@@ -344,7 +344,7 @@ jobs:
          nuget restore HandBrake.sln
 
     - name: Download LibHandBrake
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
        name: LibHandBrake
        path: HandBrake/win/CS/HandBrakeWPF/bin/publish
@@ -380,13 +380,13 @@ jobs:
       shell: cmd
       
     - name: Upload HandBrake exe Installer
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-x86_64-WinExe
         path: HandBrake/win/CS/HandBrakeWPF/bin/HandBrake/*-Win_GUI.exe
        
     - name: Upload HandBrake Portable
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: HandBrake-x86_64-WinPortable
         path: HandBrake/win/CS/HandBrakeWPF/bin/*-Win_GUI.zip
@@ -399,42 +399,42 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
        
       # X64 Devices
       - name: Download Artifacts - CLI x64
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrakeCLI
           path: win/
                    
       - name: Download Artifacts - GUI x64 EXE
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrake-x86_64-WinExe
           path: win/
        
       - name: Download Artifacts - GUI x64 Portable
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrake-x86_64-WinPortable
           path: win/
       
       # ARM DEVICES
       - name: Download Artifacts - CLI ARM64
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrakeCLI_ARM64
           path: win/
           
       - name: Download Artifacts - GUI ARM64 EXE
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrake-arm64-WinExe
           path: win/
 
       - name: Download Artifacts - GUI ARM64 Portable
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: HandBrake-arm64-WinPortable
           path: win/
