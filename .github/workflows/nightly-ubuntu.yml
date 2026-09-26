@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v7
 
     - name: Rust Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/registry
@@ -38,7 +38,7 @@ jobs:
 
     - name: Cargo-C Toolchain Cache
       id: linux-cargo-c-toolchain
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/bin/cargo-capi
@@ -88,7 +88,7 @@ jobs:
         echo "LDFLAGS=-fuse-ld=lld-22" >> $GITHUB_ENV
 
     - name: Compiler Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ github.run_id }}
