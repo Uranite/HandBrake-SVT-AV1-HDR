@@ -1,0 +1,87 @@
+diff --git a/libhb/common.c b/libhb/common.c
+index 2dcc5848c..1a35aeecb 100644
+--- a/libhb/common.c
++++ b/libhb/common.c
+@@ -2269,6 +2269,11 @@ static const enum AVPixelFormat standard_10bit_only_pix_fmts[] =
+     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_NONE
+ };
+ 
++static const enum AVPixelFormat standard_444_10bit_only_pix_fmts[] =
++{
++    AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE
++};
++
+ static const enum AVPixelFormat standard_10bit_pix_fmts[] =
+ {
+     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
+@@ -2394,8 +2399,29 @@ const int* hb_video_encoder_get_pix_fmts(int encoder, const char *profile)
+             return hb_vt_get_pix_fmts(encoder);
+ #endif
+ 
++        case HB_VCODEC_SVT_AV1:
++        {
++            // AV1 High profile supports 4:4:4
++            if (profile && !strcasecmp(profile, "high"))
++            {
++                return standard_444_pix_fmts;
++            }
++            else
++            {
++                return standard_pix_fmts;
++            }
++        }
+         case HB_VCODEC_SVT_AV1_10BIT:
+-            return standard_10bit_only_pix_fmts;
++        {
++            if (profile && !strcasecmp(profile, "high"))
++            {
++                return standard_444_10bit_only_pix_fmts;
++            }
++            else
++            {
++                return standard_10bit_only_pix_fmts;
++            }
++        }
+ 
+         default:
+             return standard_pix_fmts;
+diff --git a/libhb/encsvtav1.c b/libhb/encsvtav1.c
+index 1adcbd050..839e4bfd9 100644
+--- a/libhb/encsvtav1.c
++++ b/libhb/encsvtav1.c
+@@ -302,7 +302,20 @@ int encsvtInit(hb_work_object_t *w, hb_job_t *job)
+     param->source_width  = job->width;
+     param->source_height = job->height;
+     param->encoder_bit_depth = hb_get_bit_depth(job->output_pix_fmt);
+-    param->encoder_color_format = EB_YUV420;
++
++    switch (job->output_pix_fmt)
++    {
++        case AV_PIX_FMT_YUV444P:
++        case AV_PIX_FMT_YUV444P10:
++            param->encoder_color_format = EB_YUV444;
++            // 4:4:4 must be coded with High profile; Professional
++            // requires 4:2:2 at 8/10-bit which SVT-AV1 does not support
++            param->profile = HIGH_PROFILE;
++            break;
++        default:
++            param->encoder_color_format = EB_YUV420;
++            break;
++    }
+ 
+     if (job->pass_id == HB_PASS_ENCODE_ANALYSIS ||
+         job->pass_id == HB_PASS_ENCODE_FINAL)
+diff --git a/libhb/handbrake/av1_common.h b/libhb/handbrake/av1_common.h
+index 73d86a6fa..c88386028 100644
+--- a/libhb/handbrake/av1_common.h
++++ b/libhb/handbrake/av1_common.h
+@@ -36,7 +36,8 @@ static const char * const hb_av1_svt_tune_names[] =
+ 
+ static const char * const hb_av1_svt_profile_names[] =
+ {
+-    "auto", "main", NULL // "high", "profesional"
++    // "professional" requires 4:2:2 at 8/10-bit, which SVT-AV1 does not support
++    "auto", "main", "high", NULL
+ };
+ 
+ #endif // HANDBRAKE_AV1_COMMON_H
