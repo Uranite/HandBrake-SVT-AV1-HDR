@@ -26,7 +26,7 @@ jobs:
         cache-dependency-path: '.github/workflows/nightly-mac.yml'
 
     - name: Rust Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/registry
@@ -37,7 +37,7 @@ jobs:
 
     - name: Toolchain Cache
       id: mac-toolchain
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/mac-toolchain
         key: ${{ runner.os }}-${{ runner.arch }}-toolchain
@@ -50,7 +50,7 @@ jobs:
 
     - name: Cargo-C Toolchain Cache
       id: mac-cargo-c-toolchain
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/bin/cargo-capi
@@ -73,7 +73,7 @@ jobs:
         echo "PATH=$(brew --prefix ccache)/libexec:$PATH" >> $GITHUB_ENV
 
     - name: Compiler Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: /Users/runner/Library/Caches/ccache
         key: ${{ runner.os }}-ccache-${{ github.run_id }}
