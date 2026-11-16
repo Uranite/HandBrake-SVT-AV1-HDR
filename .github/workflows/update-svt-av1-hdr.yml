@@ -42,8 +42,19 @@ jobs:
           git commit -m "Update SVT-AV1-HDR to ${{ steps.update.outputs.version }}"
           git push
 
-      - name: Trigger validation build
+      # Pushes made with GITHUB_TOKEN do not start workflow runs, so start the
+      # platform builds explicitly after the new pin is committed.
+      - name: Trigger nightly builds
         if: steps.update.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run nightly-ubuntu.yml --ref main
+        run: |
+          for workflow in \
+            nightly-arch.yml \
+            nightly-flatpak.yml \
+            nightly-mac.yml \
+            nightly-ubuntu.yml \
+            nightly-win.yml
+          do
+            gh workflow run "$workflow" --ref main
+          done
