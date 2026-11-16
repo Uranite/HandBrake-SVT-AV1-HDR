@@ -1,2 +1,6 @@
 # HandBreak repo
 HandBrake
+
+# Python
+__pycache__/
+*.pyc

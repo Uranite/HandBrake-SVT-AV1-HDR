@@ -5,6 +5,15 @@ In addition, using GitHub Actions, nightly build of patched executables will be 
 ### Instructions to patch/build
 * Run ```patch.sh``` on linux. The script will patch the previously cloned HandBrake repo. If you want to also clone it you can use ```--clone``` argument.
 * Compile for the desired platform using the commands provided on the HandBrake wiki ([BSD](https://handbrake.fr/docs/en/latest/developer/build-bsd.html), [Linux](https://handbrake.fr/docs/en/latest/developer/build-linux.html), [Mac](https://handbrake.fr/docs/en/latest/developer/build-mac.html), [Windows](https://handbrake.fr/docs/en/latest/developer/build-windows.html))
+### Updating SVT-AV1-HDR
+The [Update SVT-AV1-HDR](.github/workflows/update-svt-av1-hdr.yml) workflow follows the latest commit on `juliobbv-p/SVT-AV1-HDR@main` every day. It builds a reproducible tarball, uploads it as `svt-av1-hdr-<short-sha>.tar.gz` to the `contribs` release, regenerates `patches/0004-change-repo-url.patch`, and verifies that the full patch set still applies to HandBrake `master`.
+
+The updater can also be run locally (requires `gh auth login`):
+```sh
+DRY_RUN=1 ./scripts/update-svt-av1-hdr.sh   # build and validate without uploading/committing
+./scripts/update-svt-av1-hdr.sh             # upload the asset and update patch 0004
+```
+Use the workflow's `ref` input to pin a tag, branch, or commit instead of `main`.
 ### Downloads and Build Status
 | Operating System  | Download        | Build Status *1 |
 | ----------------- | --------------- | ------------- |

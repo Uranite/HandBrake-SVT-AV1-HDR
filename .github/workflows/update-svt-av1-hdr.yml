@@ -1,0 +1,49 @@
+name: Update SVT-AV1-HDR
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Upstream branch, tag, or commit (default: main)'
+        required: false
+        default: main
+        type: string
+
+concurrency:
+  group: update-svt-av1-hdr
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  update:
+    name: Update pin to latest upstream commit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Update SVT-AV1-HDR
+        id: update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_REF: ${{ inputs.ref || 'main' }}
+        run: bash scripts/update-svt-av1-hdr.sh
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add patches/0004-change-repo-url.patch
+          git commit -m "Update SVT-AV1-HDR to ${{ steps.update.outputs.version }}"
+          git push
+
+      - name: Trigger validation build
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run nightly-ubuntu.yml --ref main
