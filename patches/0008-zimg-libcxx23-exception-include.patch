@@ -1,0 +1,29 @@
+diff --git a/contrib/zimg/A02-add-missing-exception-include.patch b/contrib/zimg/A02-add-missing-exception-include.patch
+new file mode 100644
+index 0000000..07e0ed9
+--- /dev/null
++++ b/contrib/zimg/A02-add-missing-exception-include.patch
+@@ -0,0 +1,23 @@
++From 67e0603271c080e22c8429856dd4a8a56587e61e Mon Sep 17 00:00:00 2001
++From: Alfred Wingate <parona@protonmail.com>
++Date: Thu, 3 Sep 2026 19:10:43 +0000
++Subject: [PATCH] api: add missing <exception> include for libc++ 23
++
++Backport of upstream zimg commit 67e06032. libc++ 23 no longer pulls
++<exception> in transitively through other standard library headers, so
++std::exception_ptr and std::current_exception must be declared by
++including <exception> explicitly.
++---
++ src/zimg/api/zimg.cpp | 1 +
++ 1 file changed, 1 insertion(+)
++
++diff --git a/src/zimg/api/zimg.cpp b/src/zimg/api/zimg.cpp
++--- a/src/zimg/api/zimg.cpp
+++++ b/src/zimg/api/zimg.cpp
++@@ -1,5 +1,6 @@
++ #include <cmath>
++ #include <cstring>
+++#include <exception>
++ #include <limits>
++ #include <memory>
++ #include <string>
