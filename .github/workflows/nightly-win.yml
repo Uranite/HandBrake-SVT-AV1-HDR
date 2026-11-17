@@ -25,13 +25,16 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
+    - name: Cache week
+      run: echo "WEEK=$(date -u +%G-W%V)" >> "$GITHUB_ENV"
+
     - name: Rust Cache
       uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        key: ${{ runner.os }}-cargo-${{ env.WEEK }}
         restore-keys: |
           ${{ runner.os }}-cargo-
 
@@ -210,13 +213,16 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
+    - name: Cache week
+      run: echo "WEEK=$(date -u +%G-W%V)" >> "$GITHUB_ENV"
+
     - name: Rust Cache
       uses: actions/cache@v6
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-        key: ${{ runner.os }}-cargo-${{ github.run_id }}
+        key: ${{ runner.os }}-cargo-${{ env.WEEK }}
         restore-keys: |
           ${{ runner.os }}-cargo-
 
