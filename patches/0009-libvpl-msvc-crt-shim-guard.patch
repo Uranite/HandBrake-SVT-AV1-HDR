@@ -1,0 +1,31 @@
+diff --git a/contrib/libvpl/A01-restrict-msvc-crt-shims.patch b/contrib/libvpl/A01-restrict-msvc-crt-shims.patch
+new file mode 100644
+index 0000000..1cb612e
+--- /dev/null
++++ b/contrib/libvpl/A01-restrict-msvc-crt-shims.patch
+@@ -0,0 +1,25 @@
++From 412c5cff5a2d8fadafe38665d68ba6f7e89a473e Mon Sep 17 00:00:00 2001
++From: Alfred Wingate <parona@protonmail.com>
++Date: Tue, 1 Sep 2026 07:33:56 +0000
++Subject: [PATCH] Restrict wcscpy_s and wcscat_s defines to MSVC
++
++Backport of upstream libvpl commit 412c5cff. When _MSC_VER is undefined,
++as it is with mingw-w64, the preprocessor treats it as 0 and enables the
++legacy compatibility macros. mingw-w64 20261104 now provides wcscpy_s and
++wcscat_s, so the macros break stralign.h.
++---
++ libvpl/src/windows/mfx_dispatcher_defs.h | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++diff --git a/libvpl/src/windows/mfx_dispatcher_defs.h b/libvpl/src/windows/mfx_dispatcher_defs.h
++--- a/libvpl/src/windows/mfx_dispatcher_defs.h
+++++ b/libvpl/src/windows/mfx_dispatcher_defs.h
++@@ -17,7 +17,7 @@
++ #define MAX_PLUGIN_PATH 4096
++ #define MAX_PLUGIN_NAME 4096
++ 
++-#if _MSC_VER < 1400
+++#if defined(_MSC_VER) && _MSC_VER < 1400
++     #define wcscpy_s(to, to_size, from) \
++         (void)(to_size);                \
++         wcscpy(to, from)
