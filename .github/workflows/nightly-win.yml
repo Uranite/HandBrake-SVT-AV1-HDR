@@ -150,11 +150,10 @@ jobs:
         git rev-parse --short HEAD > gitHash.txt
         git show -s --format=%cs > hb_date.txt
         
-    - name: NuGet Restore
-      run: |
-         choco install nuget.commandline
-         cd HandBrake/win/CS/
-         nuget restore HandBrake.sln
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: "10.0.x"
 
     - name: Download LibHandBrake ARM 64
       uses: actions/download-artifact@v8
@@ -165,8 +164,7 @@ jobs:
     - name: Build Windows GUI
       run: |
         cd HandBrake
-        $env:Path += ";C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
-        msbuild win\cs\build.xml /t:arm64 
+        dotnet msbuild win\cs\build.xml /t:arm64 
 
     - name: Prepare Package
       run: |
@@ -337,11 +335,10 @@ jobs:
         git rev-parse --short HEAD > gitHash.txt
         git show -s --format=%cs > hb_date.txt
 
-    - name: NuGet Restore
-      run: |
-         choco install nuget.commandline
-         cd HandBrake/win/CS/
-         nuget restore HandBrake.sln
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: "10.0.x"
 
     - name: Download LibHandBrake
       uses: actions/download-artifact@v8
@@ -352,8 +349,7 @@ jobs:
     - name: Build Windows GUI
       run: |
         cd HandBrake
-        $env:Path += ";C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
-        msbuild win\cs\build.xml /t:x64 
+        dotnet msbuild win\cs\build.xml /t:x64 
         
     - name: Prepare Package
       run: |

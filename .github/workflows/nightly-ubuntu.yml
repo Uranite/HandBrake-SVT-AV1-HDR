@@ -60,32 +60,32 @@ jobs:
 
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        sudo ./llvm.sh 22 all
+        sudo ./llvm.sh 23 all
         
         mkdir -p $HOME/llvm-overrides
         
-        ln -sf $(which llvm-ar-22) $HOME/llvm-overrides/ar
-        ln -sf $(which llvm-nm-22) $HOME/llvm-overrides/nm
-        ln -sf $(which llvm-ranlib-22) $HOME/llvm-overrides/ranlib
+        ln -sf $(which llvm-ar-23) $HOME/llvm-overrides/ar
+        ln -sf $(which llvm-nm-23) $HOME/llvm-overrides/nm
+        ln -sf $(which llvm-ranlib-23) $HOME/llvm-overrides/ranlib
         
-        ln -sf $(which lld-22) $HOME/llvm-overrides/ld
+        ln -sf $(which lld-23) $HOME/llvm-overrides/ld
 
         echo "PATH=$HOME/llvm-overrides:$PATH" >> $GITHUB_ENV
 
         mkdir -p $HOME/ccache_bin
-        ln -s $(which ccache) $HOME/ccache_bin/clang-22
-        ln -s $(which ccache) $HOME/ccache_bin/clang++-22
+        ln -s $(which ccache) $HOME/ccache_bin/clang-23
+        ln -s $(which ccache) $HOME/ccache_bin/clang++-23
         
         echo "PATH=$HOME/ccache_bin:$HOME/llvm-overrides:$PATH" >> $GITHUB_ENV
         
         echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-        echo "CC=clang-22" >> $GITHUB_ENV
-        echo "CXX=clang++-22" >> $GITHUB_ENV
+        echo "CC=clang-23" >> $GITHUB_ENV
+        echo "CXX=clang++-23" >> $GITHUB_ENV
         
-        echo "AR=llvm-ar-22" >> $GITHUB_ENV
-        echo "NM=llvm-nm-22" >> $GITHUB_ENV
-        echo "RANLIB=llvm-ranlib-22" >> $GITHUB_ENV
-        echo "LDFLAGS=-fuse-ld=lld-22" >> $GITHUB_ENV
+        echo "AR=llvm-ar-23" >> $GITHUB_ENV
+        echo "NM=llvm-nm-23" >> $GITHUB_ENV
+        echo "RANLIB=llvm-ranlib-23" >> $GITHUB_ENV
+        echo "LDFLAGS=-fuse-ld=lld-23" >> $GITHUB_ENV
 
     - name: Compiler Cache
       uses: actions/cache@v6
