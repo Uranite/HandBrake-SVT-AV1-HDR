@@ -13,15 +13,18 @@ pkgrel=1
 arch=('x86_64')
 url="https://handbrake.fr/"
 license=(GPL-2.0-only)
+# Link against the split libgcc/libstdc++ runtime packages directly; the
+# gcc-libs metapackage only pulls them in and namcap flags it as unneeded.
 _commondeps=(
   'bzip2'
-  'fribidi'
-  'gcc-libs'
   'jansson'
   'lame'
   'libass'
+  'libdrm'
+  'libgcc'
   'libjpeg-turbo'
   'libogg'
+  'libstdc++'
   'libtheora'
   'libva'
   'libvorbis'
@@ -85,7 +88,9 @@ setup_compiler() {
   unset CXXFLAGS
   export CPP="/usr/bin/clang-cpp"
   export LD="/usr/bin/lld"
-  export LDFLAGS="-fuse-ld=lld"
+  # Keep the hardening flags makepkg normally passes (RELRO/BIND_NOW) and
+  # restore --as-needed, which the LLVM toolchain override would otherwise drop.
+  export LDFLAGS="-fuse-ld=lld -Wl,--as-needed -Wl,-z,relro,-z,now"
   export AR="/usr/bin/llvm-ar"
   export RANLIB="/usr/bin/llvm-ranlib"
   export NM="/usr/bin/llvm-nm"
@@ -122,7 +127,6 @@ build() {
 package_handbrake-svt-av1-hdr-llvm-optimized() {
   pkgdesc="Multithreaded video transcoder optimized with LLVM"
   depends=(
-    'desktop-file-utils'
     'hicolor-icon-theme'
     "${_commondeps[@]}"
     "${_guideps[@]}"
