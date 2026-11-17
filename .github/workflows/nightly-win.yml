@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TOOLCHAIN_VERSION: "20260616"
-  TOOLCHAIN_SHA: "a1f7968b48ba8d949194d6dee6c76f3cd0f61cba91658599af2c2c834a55ab87"
-  TOOLCHAIN_FILE: "llvm-mingw-20260616-msvcrt-ubuntu-22.04-x86_64.tar.xz"
+  TOOLCHAIN_VERSION: "20261104"
+  TOOLCHAIN_SHA: "6e3342e2e0dfa56e9178f3c34b198f278bd5e603db4a759455d1439cc2230630"
+  TOOLCHAIN_FILE: "llvm-mingw-20261104-msvcrt-ubuntu-22.04-x86_64.tar.xz"
 
 jobs:
   build_mingw_arm:
