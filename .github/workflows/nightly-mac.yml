@@ -13,6 +13,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CCACHE_MAXSIZE: 1500M
+  CCACHE_COMPRESS: "true"
+  CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime
+
 jobs:
   build:
     name: Build on macOS
@@ -79,7 +84,7 @@ jobs:
       uses: actions/cache@v6
       with:
         path: /Users/runner/Library/Caches/ccache
-        key: ${{ runner.os }}-ccache-${{ github.run_id }}
+        key: ${{ runner.os }}-ccache-${{ env.WEEK }}
         restore-keys: |
           ${{ runner.os }}-ccache-
 
@@ -96,6 +101,7 @@ jobs:
 
     - name: Build HandBrake
       run: |
+        ccache -z
         cd HandBrake
         ./configure --enable-libdovi
         cd build

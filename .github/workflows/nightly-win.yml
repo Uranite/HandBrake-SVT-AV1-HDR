@@ -17,6 +17,9 @@ env:
   TOOLCHAIN_VERSION: "20261104"
   TOOLCHAIN_SHA: "6e3342e2e0dfa56e9178f3c34b198f278bd5e603db4a759455d1439cc2230630"
   TOOLCHAIN_FILE: "llvm-mingw-20261104-msvcrt-ubuntu-22.04-x86_64.tar.xz"
+  CCACHE_MAXSIZE: 1500M
+  CCACHE_COMPRESS: "true"
+  CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime
 
 jobs:
   build_mingw_arm:
@@ -49,8 +52,9 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-arm-ccache-${{ github.run_id }}
+        key: ${{ runner.os }}-arm-ccache-llvmmingw-${{ env.TOOLCHAIN_VERSION }}-${{ env.WEEK }}
         restore-keys: |
+          ${{ runner.os }}-arm-ccache-llvmmingw-
           ${{ runner.os }}-arm-ccache-
 
     - name: Get latest cargo-c version
@@ -73,6 +77,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache
+        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
         rustup target add aarch64-pc-windows-gnullvm
 
     - name: Setup Toolchain
@@ -100,8 +105,11 @@ jobs:
         cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
 
     - name: Build CLI and LibHB
+      env:
+        CCACHE_COMPILERCHECK: "string:llvm-mingw-${{ env.TOOLCHAIN_VERSION }}"
       run: |
         CWDIR=$(pwd)
+        ccache -z
         export PATH="$CWDIR/toolchains/llvm-mingw-${{ env.TOOLCHAIN_VERSION }}-msvcrt-ubuntu-22.04-x86_64/bin:${PATH}"
 
         mkdir -p ccache_bin
@@ -110,7 +118,6 @@ jobs:
         export PATH="$CWDIR/ccache_bin:$PATH"
         export CC="clang"
         export CXX="clang++"
-        export CCACHE_DIR=$HOME/.ccache
 
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh
@@ -237,8 +244,9 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-x64-ccache-${{ github.run_id }}
+        key: ${{ runner.os }}-x64-ccache-llvmmingw-${{ env.TOOLCHAIN_VERSION }}-${{ env.WEEK }}
         restore-keys: |
+          ${{ runner.os }}-x64-ccache-llvmmingw-
           ${{ runner.os }}-x64-ccache-
 
     - name: Get latest cargo-c version
@@ -261,6 +269,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install automake autoconf build-essential intltool libtool libtool-bin make meson nasm patch tar yasm zlib1g-dev ninja-build gzip pax cmake ccache
+        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
         rustup target add x86_64-pc-windows-gnu
 
     - name: Setup Toolchain
@@ -288,8 +297,11 @@ jobs:
         cargo install cargo-c --version ${{ env.CARGOC_VERSION }} --locked
 
     - name: Build CLI and LibHB
+      env:
+        CCACHE_COMPILERCHECK: "string:llvm-mingw-${{ env.TOOLCHAIN_VERSION }}"
       run: |
         CWDIR=$(pwd)
+        ccache -z
         export PATH="$CWDIR/toolchains/llvm-mingw-${{ env.TOOLCHAIN_VERSION }}-msvcrt-ubuntu-22.04-x86_64/bin:${PATH}"
 
         mkdir -p ccache_bin
@@ -298,7 +310,6 @@ jobs:
         export PATH="$CWDIR/ccache_bin:$PATH"
         export CC="clang"
         export CXX="clang++"
-        export CCACHE_DIR=$HOME/.ccache
 
         git clone https://github.com/HandBrake/HandBrake.git
         ./patch.sh

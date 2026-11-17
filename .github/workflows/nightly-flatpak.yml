@@ -106,9 +106,15 @@ jobs:
       with:
         path: |
           HandBrake/build/.flatpak-builder/ccache
-        key: flatpak-ccache-${{ github.run_id }}
+        key: flatpak-ccache-gnome51-${{ env.WEEK }}
         restore-keys: |
+          flatpak-ccache-gnome51-
           flatpak-ccache-
+
+    - name: Configure ccache
+      run: |
+        mkdir -p HandBrake/build/.flatpak-builder/ccache
+        ccache -d HandBrake/build/.flatpak-builder/ccache -M 1500M
 
     - name: Build HandBrake
       run: |

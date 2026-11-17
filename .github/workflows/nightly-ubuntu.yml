@@ -13,6 +13,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CCACHE_MAXSIZE: 1500M
+  CCACHE_COMPRESS: "true"
+  CCACHE_COMPILERCHECK: content
+  CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime
+
 jobs:
   build:
     name: Build on Ubuntu
@@ -94,8 +100,9 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.run_id }}
+        key: ${{ runner.os }}-ccache-llvm23-${{ env.WEEK }}
         restore-keys: |
+          ${{ runner.os }}-ccache-llvm23-
           ${{ runner.os }}-ccache-
 
     - name: Setup Cargo-C Toolchain
@@ -110,6 +117,7 @@ jobs:
 
     - name: Build HandBrake Linux
       run: |
+        ccache -z
         cd HandBrake
         ./configure --lto=on --enable-qsv --enable-vce --enable-nvenc --enable-nvdec --enable-libdovi --launch-jobs=0 --launch
         mv build/HandBrakeCLI ../HandBrakeCLI-$(date +'%Y%m%d')-master-x86_64
