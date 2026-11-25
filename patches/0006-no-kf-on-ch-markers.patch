@@ -1,8 +1,7 @@
 diff --git a/libhb/encsvtav1.c b/libhb/encsvtav1.c
-index b24dec46f..a34bab2b0 100644
 --- a/libhb/encsvtav1.c
 +++ b/libhb/encsvtav1.c
-@@ -512,16 +512,10 @@ static int send(hb_work_object_t *w, hb_buffer_t *in)
+@@ -527,10 +527,6 @@
  
      if (in->s.new_chap > 0 && pv->job->chapter_markers)
      {
@@ -12,12 +11,4 @@ index b24dec46f..a34bab2b0 100644
 -        }
          hb_chapter_enqueue(pv->chapter_queue, in);
      }
--    else
--    {
--        headerPtr->pic_type = EB_AV1_INVALID_PICTURE;
--    }
-+
-+    headerPtr->pic_type = EB_AV1_INVALID_PICTURE;
- 
-     svt_av1_enc_send_picture(pv->svt_handle, headerPtr);
  
