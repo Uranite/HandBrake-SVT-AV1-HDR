@@ -62,19 +62,25 @@ PY
 # Print "1|<sha256>" when the asset exists (digest may be empty), else "0|".
 release_asset_state() {
     local name="$1"
-    local json
-    json="$(gh api "repos/${RELEASE_REPO}/releases/tags/${RELEASE_TAG}" 2>/dev/null || true)"
-    if [[ -z "$json" ]]; then
+    local json_file
+    json_file="$(mktemp)"
+    if ! gh api "repos/${RELEASE_REPO}/releases/tags/${RELEASE_TAG}" \
+        >"$json_file" 2>/dev/null; then
+        rm -f "$json_file"
         printf '0|'
         return 0
     fi
-    printf '%s' "$json" | python3 - "$name" <<'PY'
+    # Hand the JSON over as a file, never through a pipe: the heredoc below
+    # already owns stdin, so a pipe has no reader and printf fails with
+    # "write error: Broken pipe" (fatal because of pipefail).
+    python3 - "$name" "$json_file" <<'PY'
 import json
 import sys
 
-name = sys.argv[1]
+name, path = sys.argv[1], sys.argv[2]
 try:
-    release = json.load(sys.stdin)
+    with open(path, encoding="utf-8") as handle:
+        release = json.load(handle)
 except Exception:
     print("0|")
     raise SystemExit(0)
@@ -87,6 +93,7 @@ for asset in release.get("assets", []):
 else:
     print("0|")
 PY
+    rm -f "$json_file"
 }
 
 need gh
@@ -120,7 +127,9 @@ fi
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-IFS='|' read -r ASSET_EXISTS REMOTE_DIGEST <<<"$(release_asset_state "$ASSET_NAME")"
+ASSET_STATE="$(release_asset_state "$ASSET_NAME")" \
+    || die "could not read ${RELEASE_REPO}#${RELEASE_TAG} release assets"
+IFS='|' read -r ASSET_EXISTS REMOTE_DIGEST <<<"$ASSET_STATE"
 
 LOCAL_ASSET=""
 NEED_UPLOAD=0
@@ -212,7 +221,9 @@ if [[ "$NEED_UPLOAD" == "1" && "$DRY_RUN" != "1" ]]; then
     gh release upload "$RELEASE_TAG" "$LOCAL_ASSET" \
         --repo "$RELEASE_REPO" --clobber
 
-    UPLOADED_DIGEST="$(release_asset_state "$ASSET_NAME" | cut -d'|' -f2)"
+    ASSET_STATE="$(release_asset_state "$ASSET_NAME")" \
+        || die "could not read ${RELEASE_REPO}#${RELEASE_TAG} release assets"
+    UPLOADED_DIGEST="${ASSET_STATE#*|}"
     if [[ -n "$UPLOADED_DIGEST" && "$UPLOADED_DIGEST" != "$SHA256" ]]; then
         die "uploaded asset digest mismatch: ${UPLOADED_DIGEST} != ${SHA256}"
     fi
